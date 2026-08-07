@@ -554,6 +554,12 @@ body{background:var(--bg-root);color:var(--text);height:auto;min-height:100vh;ov
     <div class="topbar-actions">
       <span class="topbar-pill" id="topbarStatus">全部系统正常</span>
       <button class="topbar-action" onclick="simulateRefresh()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M21 12a9 9 0 11-2.6-6.4"/><path d="M21 3v6h-6"/></svg>刷新数据</button>
+      <a class="topbar-action" id="kgAdminEntry" href="#" target="_blank" rel="noopener" style="text-decoration:none"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>管理员入口</a>
+      <script>
+        // 管理员入口：指向后端管理员登录页（后端地址在 config.js 的 API_BASE 中定义）
+        var _kgAdminEntry = document.getElementById('kgAdminEntry');
+        if (_kgAdminEntry) _kgAdminEntry.href = (window.API_BASE || '') + '/admin/login';
+      </script>
     </div>
   </div>
   <div class="content" id="contentArea">

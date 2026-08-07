@@ -62,6 +62,7 @@
     <span id="topbarStatus" class="nav-status">● 全部系统正常</span>
     <button class="nav-refresh" onclick="simulateRefresh()">↻ 刷新数据</button>
     <a class="navcta ext" href="https://linzuyan6.github.io/rongzhicuixin-3/" target="_blank" rel="noopener">团队介绍 ↗</a>
+    <a class="navcta" id="adminEntry" href="#" target="_blank" rel="noopener" style="background:#334155;margin-left:8px">🔐 管理员入口 ↗</a>
   </div>
 </div>
 
@@ -157,6 +158,12 @@
 <footer>© 2026 熔智淬新 · 湾区 AI 未来青年创造营 · <a href="index.html" style="color:#7dd3fc">返回首页</a></footer>
 
 <script src="chart.umd.js"></script>
+<script src="config.js"></script>
+<script>
+  // 管理员入口：指向后端管理员登录页（后端地址在 config.js 的 API_BASE 中定义）
+  var _adminEntry = document.getElementById('adminEntry');
+  if (_adminEntry) _adminEntry.href = (window.API_BASE || '') + '/admin/login';
+</script>
 <script src="app.js"></script>
 <script>
 initRealtime();
