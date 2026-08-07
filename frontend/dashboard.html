@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>实时数据看板 · 熔智淬新</title>
+<link rel="stylesheet" href="style.css">
+<style>
+/* 看板组件（从老 demo 精选移植，浅色化） */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:6px}
+.kpi-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 13px;box-shadow:var(--shadow)}
+.kpi-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;margin-bottom:9px;font-size:13px;font-weight:700}
+.kpi-icon.teal{background:#14b8a6}.kpi-icon.blue{background:#3b82f6}.kpi-icon.green{background:#10b981}.kpi-icon.amber{background:#f59e0b}.kpi-icon.red{background:#ef4444}
+.kpi-label{font-size:12px;color:var(--text-dim);margin-bottom:5px}
+.kpi-value{font-size:25px;font-weight:800;color:var(--ink);line-height:1}
+.kpi-value .unit{font-size:12px;font-weight:600;color:var(--text-dim);margin-left:3px}
+.kpi-sub{font-size:11.5px;margin-top:7px;color:var(--text-dim)}
+.kpi-sub.up{color:#10b981}.kpi-sub.down{color:#ef4444}
+.dash-row{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
+.dash-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
+.dash-title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:12px}
+.alert-feed{display:flex;flex-direction:column;gap:9px}
+.alert-item{display:flex;gap:10px;align-items:flex-start;background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+.alert-icon{flex:0 0 auto;font-size:13px;margin-top:1px;font-weight:700}
+.alert-item.warn .alert-icon{color:#f59e0b}.alert-item.danger .alert-icon{color:#ef4444}.alert-item.info .alert-icon{color:#3b82f6}.alert-item.ok .alert-icon{color:#10b981}
+.alert-body{font-size:12.5px;line-height:1.5}
+.alert-msg{color:var(--ink)}
+.alert-meta{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--text-dim);margin-top:4px}
+.table-scroll{overflow-x:auto}
+.data-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.data-table th{background:#f1f5f9;color:var(--ink);font-weight:700;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.data-table td{padding:8px 10px;border-bottom:1px solid #eef2f7;color:var(--text)}
+.data-table tr:last-child td{border-bottom:none}
+.badge-sm{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px}
+.badge-sm.ok{background:#dcfce7;color:#16a34a}.badge-sm.warn{background:#fef3c7;color:#d97706}.badge-sm.info{background:#dbeafe;color:#2563eb}.badge-sm.ng{background:#fee2e2;color:#dc2626}
+@media(max-width:860px){.kpi-row{grid-template-columns:repeat(2,1fr)}.dash-row{grid-template-columns:1fr}}
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
+.chart-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
+.chart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.chart-title{font-size:13px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px}
+.chart-title::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--blue);flex-shrink:0}
+.chart-badge{font-size:10px;padding:3px 8px;border-radius:8px;background:#eff6ff;color:#2563eb;font-weight:600}
+.chart-wrap{position:relative;height:240px}
+.chart-wrap.tall{height:300px}
+.chart-wrap canvas{width:100%!important}
+@media(max-width:860px){.chart-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <div class="wrap">
+    <a class="brand" href="index.html">熔智<span>淬</span>新</a>
+    <nav class="navlinks">
+      <a href="index.html">首页</a>
+      <a href="vision.html">视声融合</a>
+      <a href="kg.html">知识图谱</a>
+      <a href="control.html">工艺自迭代</a>
+      <a href="dashboard.html" class="cur">实时看板</a>
+      <a href="roi.html">改造估算</a>
+    </nav>
+    <span id="topbarStatus" class="nav-status">● 全部系统正常</span>
+    <button class="nav-refresh" onclick="simulateRefresh()">↻ 刷新数据</button>
+    <a class="navcta ext" href="https://linzuyan6.github.io/rongzhicuixin-3/" target="_blank" rel="noopener">团队介绍 ↗</a>
+  </div>
+</div>
+
+<section class="sec wrap">
+  <span class="sec-tag">总览看板</span>
+  <div class="sec-h">产线总览 · 实时运行采样</div>
+  <div class="sec-sub">以下为标杆产线综合运行态的实时采样（用于呈现"已落地、在运行"的真实状态，部分为演示用模拟值）。</div>
+
+  <div class="kpi-row">
+    <div class="kpi-card"><div class="kpi-icon teal">检</div><div class="kpi-label">综合缺陷检出率</div><div class="kpi-value">98.5<span class="unit">%</span></div><div class="kpi-sub up">较上期 +0.3%</div></div>
+    <div class="kpi-card"><div class="kpi-icon blue">效</div><div class="kpi-label">OEE 设备综合效率</div><div class="kpi-value">87.2<span class="unit">%</span></div><div class="kpi-sub up">较上期 +1.5%</div></div>
+    <div class="kpi-card"><div class="kpi-icon green">产</div><div class="kpi-label">今日产量</div><div class="kpi-value">12,840<span class="unit">块</span></div><div class="kpi-sub up">达成率 102.7%</div></div>
+    <div class="kpi-card"><div class="kpi-icon amber">能</div><div class="kpi-label">单位能耗</div><div class="kpi-value">3.25<span class="unit">kWh/块</span></div><div class="kpi-sub down">较改造前 -35.6%</div></div>
+    <div class="kpi-card"><div class="kpi-icon red">人</div><div class="kpi-label">产线用工</div><div class="kpi-value">22<span class="unit">人</span></div><div class="kpi-sub down">较改造前 -71.4%</div></div>
+  </div>
+
+  <div class="dash-row">
+    <div class="dash-card">
+      <div class="dash-title">⚠️ 实时告警流</div>
+      <div class="alert-feed">
+        <div class="alert-item warn"><span class="alert-icon">▲</span><div class="alert-body"><div class="alert-msg">3#烘干区温度偏高（当前 382°C，阈值 380°C）— 建议降低进气阀开度 15%</div><div class="alert-meta"><span>09:12:05</span><span>预警</span><span>自动处置中</span></div></div></div>
+        <div class="alert-item warn"><span class="alert-icon">▲</span><div class="alert-body"><div class="alert-msg">1#破碎机振动幅值偏高（8.2mm/s，阈值 7.5mm/s）— 已自动降低进料速度至 85%</div><div class="alert-meta"><span>07:45:18</span><span>预警</span><span>已恢复</span></div></div></div>
+        <div class="alert-item danger"><span class="alert-icon">✕</span><div class="alert-body"><div class="alert-msg">异形砖 A 检测模型准确率降至 95.8%（阈值 96%）— 触发紧急增量训练</div><div class="alert-meta"><span>06:22:30</span><span>严重</span><span>训练中</span></div></div></div>
+        <div class="alert-item info"><span class="alert-icon">ℹ</span><div class="alert-body"><div class="alert-msg">MZX-Box #A7 固件自动更新完成 v3.2.1，新增自适应曝光补偿功能</div><div class="alert-meta"><span>08:55:32</span><span>信息</span></div></div></div>
+        <div class="alert-item ok"><span class="alert-icon">✓</span><div class="alert-body"><div class="alert-msg">今日首班产线全面自检通过，所有工位就绪，环境温湿度正常</div><div class="alert-meta"><span>08:30:00</span><span>正常</span></div></div></div>
+        <div class="alert-item info"><span class="alert-icon">ℹ</span><div class="alert-body"><div class="alert-msg">能耗优化算法自动调整烘干曲线，预计今日可额外节能 2.8%</div><div class="alert-meta"><span>08:00:00</span><span>信息</span></div></div></div>
+      </div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-title">📋 标杆项目状态</div>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead><tr><th>项目</th><th>状态</th><th>运行时长</th><th>检出率</th><th>OEE</th><th>本月产量</th></tr></thead>
+          <tbody>
+            <tr><td>新沂·锡沂研究院</td><td><span class="badge-sm ok">在线</span></td><td>2,847h</td><td>98.6%</td><td>88.5%</td><td>38.2万块</td></tr>
+            <tr><td>山西·鑫城科技</td><td><span class="badge-sm ok">在线</span></td><td>1,532h</td><td>98.3%</td><td>85.9%</td><td>24.1万块</td></tr>
+            <tr><td>湾区交付中心</td><td><span class="badge-sm warn">筹备</span></td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+            <tr><td>澳门体验中心</td><td><span class="badge-sm info">规划</span></td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section><section class="sec wrap">
+  <span class="sec-tag">多维运行分析</span>
+  <div class="sec-h">产线多维运行分析 · 可视化采样</div>
+  <div class="sec-sub">缺陷分布、检测性能趋势、产量与不良率、模型版本占比——以下为标杆产线实时采样的可视化呈现（演示用模拟值）。</div>
+  <div class="chart-grid">
+    <div class="chart-card"><div class="chart-head"><span class="chart-title">检测性能趋势（近 7 天）</span><span class="chart-badge">实时</span></div><div class="chart-wrap"><canvas id="dbChart1"></canvas></div></div>
+    <div class="chart-card"><div class="chart-head"><span class="chart-title">产量与不良率（近 7 天）</span></div><div class="chart-wrap"><canvas id="dbChart2"></canvas></div></div>
+    <div class="chart-card"><div class="chart-head"><span class="chart-title">缺陷类型分布（今日累计）</span><span class="chart-badge">386 个</span></div><div class="chart-wrap tall"><canvas id="dbChart3"></canvas></div></div>
+    <div class="chart-card"><div class="chart-head"><span class="chart-title">模型版本分布</span></div><div class="chart-wrap tall"><canvas id="dbChart4"></canvas></div></div>
+  </div>
+</section><section class="sec wrap">
+  <span class="sec-tag">标杆验证</span>
+  <div class="sec-h">实时数据看板 · 两大标杆项目在线状态</div>
+  <div class="sec-sub">已在新沂·锡沂高新材料产业技术研究院、山西鑫城科技落地 2 个标杆验证项目。以下为在线运行状态的实时采样（每 4 秒刷新一次）。</div>
+
+  <div class="rt-grid" style="margin-top:6px">
+    <div class="card rt-card">
+      <div class="rt-head"><h4>新沂 · 锡沂高新材料产业技术研究院</h4><span class="dot">● 在线</span></div>
+      <div class="rt-img"><img src="assets/robot-stack.png" alt="机器人码垛耐火砖产线"></div>
+      <div style="margin-top:12px">
+        <div class="rt-row"><span>累计在线时长</span><b id="rt1a">2,847 h</b></div>
+        <div class="rt-row"><span>综合检出率</span><b id="rt1b">98.6%</b></div>
+        <div class="rt-row"><span>OEE 设备综合效率</span><b id="rt1c">88.5%</b></div>
+      </div>
+    </div>
+    <div class="card rt-card">
+      <div class="rt-head"><h4>山西 · 鑫城科技（镁碳砖产线）</h4><span class="dot">● 在线</span></div>
+      <div class="rt-img"><img src="assets/kiln.png" alt="耐火砖窑炉"></div>
+      <div style="margin-top:12px">
+        <div class="rt-row"><span>累计在线时长</span><b id="rt2a">1,932 h</b></div>
+        <div class="rt-row"><span>综合检出率</span><b id="rt2b">98.8%</b></div>
+        <div class="rt-row"><span>OEE 设备综合效率</span><b id="rt2c">90.1%</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="note" style="margin-top:14px">数据为标杆项目运行采样，用于呈现"已落地、在运行"的真实状态。综合检出率 98.6% / 98.8% 为项目实测值；抖动仅为演示用实时刷新效果。</div>
+</section><section class="sec wrap">
+  <div class="twocol">
+    <div class="txtcard card">
+      <h3>从"演示"到"产线级验证"</h3>
+      <p>两个标杆项目覆盖<b>铝硅系（新沂）</b>与<b>镁碳系（山西）</b>两大类耐材，验证了视声融合检测与知识图谱在不同配方、不同窑型下的<b>跨场景泛化能力</b>。</p>
+    </div>
+    <div class="txtcard card">
+      <h3>数据飞轮已转起来</h3>
+      <p>在线产线持续回传复检数据，驱动知识图谱与温控模型自更新——这正是我们相对纯硬件检测厂商的<b>数据壁垒</b>，也是中葡出海的可复制底座。</p>
+    </div>
+  </div>
+</section>
+
+<footer>© 2026 熔智淬新 · 湾区 AI 未来青年创造营 · <a href="index.html" style="color:#7dd3fc">返回首页</a></footer>
+
+<script src="chart.umd.js"></script>
+<script src="app.js"></script>
+<script>
+initRealtime();
+function simulateRefresh(){
+  var s=document.getElementById('topbarStatus');
+  if(s){s.textContent='↻ 数据刷新中...';s.style.background='rgba(245,158,11,.2)';s.style.color='#fbbf24';}
+  try{if(typeof liveJitter==='function')liveJitter();}catch(e){}
+  setTimeout(function(){if(s){s.textContent='● 全部系统正常';s.style.background='rgba(16,185,129,.15)';s.style.color='#a7f3d0';}},700);
+}
+(function(){
+  if(typeof Chart==='undefined'){console.warn('[Chart] 本地 Chart.js 未加载，图表降级');return;}
+  Chart.defaults.color='#475569';
+  Chart.defaults.borderColor='rgba(100,116,139,0.12)';
+  Chart.defaults.font.family=getComputedStyle(document.body).fontFamily;
+  Chart.defaults.font.size=11;
+  function gradient(ctx,c1,c2,h){var g=ctx.createLinearGradient(0,0,0,h||240);g.addColorStop(0,c1);g.addColorStop(1,c2);return g;}
+  var c1=document.getElementById('dbChart1');
+  if(c1){var x1=c1.getContext('2d');new Chart(x1,{type:'line',data:{labels:['7/22','7/23','7/24','7/25','7/26','7/27','7/28'],datasets:[
+    {label:'表面检出率',data:[98.8,99.0,98.9,99.1,99.2,99.0,99.2],borderColor:'#f59e0b',backgroundColor:gradient(x1,'rgba(245,158,11,0.18)','rgba(245,158,11,0)'),fill:true,tension:0.4,pointRadius:3,pointBackgroundColor:'#f59e0b',borderWidth:2},
+    {label:'内部检出率',data:[97.8,98.0,97.9,98.2,98.0,98.1,98.1],borderColor:'#06b6d4',backgroundColor:gradient(x1,'rgba(6,182,212,0.14)','rgba(6,182,212,0)'),fill:true,tension:0.4,pointRadius:3,pointBackgroundColor:'#06b6d4',borderWidth:2}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:16,color:'#475569',font:{size:11}}}},scales:{y:{min:96,max:100,ticks:{callback:function(v){return v+'%'},color:'#64748b'},grid:{color:'rgba(100,116,139,0.10)'}},x:{grid:{display:false},ticks:{color:'#64748b'}}},interaction:{intersect:false,mode:'index'}}});}
+  var c2=document.getElementById('dbChart2');
+  if(c2){var x2=c2.getContext('2d');new Chart(x2,{type:'bar',data:{labels:['7/22','7/23','7/24','7/25','7/26','7/27','7/28'],datasets:[
+    {label:'产量(千块)',data:[11.8,12.1,11.5,12.4,12.8,12.3,12.84],backgroundColor:'rgba(245,158,11,0.55)',borderRadius:5,yAxisID:'y',order:2},
+    {label:'不良率(%)',data:[3.2,2.9,3.1,2.7,2.5,2.8,3.0],type:'line',borderColor:'#ef4444',borderWidth:2,pointRadius:4,pointBackgroundColor:'#ef4444',tension:0.35,yAxisID:'y1',order:1}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:16,color:'#475569',font:{size:11}}}},scales:{y:{position:'left',title:{display:true,text:'千块',color:'#64748b'},grid:{color:'rgba(100,116,139,0.10)'},ticks:{color:'#64748b'}},y1:{position:'right',min:0,max:7,ticks:{callback:function(v){return v+'%'},color:'#64748b'},grid:{drawOnChartArea:false}},x:{grid:{display:false},ticks:{color:'#64748b'}}},interaction:{intersect:false,mode:'index'}}});}
+  var c3=document.getElementById('dbChart3');
+  if(c3){var x3=c3.getContext('2d');new Chart(x3,{type:'doughnut',data:{labels:['表面裂纹','内部气孔','缺角/掉块','尺寸偏差','夹杂物','色差异常','内部分层','其他'],datasets:[{data:[145,98,67,42,21,8,3,2],backgroundColor:['#ef4444','#f59e0b','#06b6d4','#10b981','#3b82f6','#3b82f6','#fb923c','#94a3b8'],borderWidth:0,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:12,color:'#475569',font:{size:10}}}},cutout:'55%'}});}
+  var c4=document.getElementById('dbChart4');
+  if(c4){var x4=c4.getContext('2d');new Chart(x4,{type:'doughnut',data:{labels:['标砖230视觉','标砖230超声','异形砖A视觉','异形砖B视觉','通用融合','标砖300视觉','镁碳砖融合'],datasets:[{data:[39,22,12,7,10,6,4],backgroundColor:['#f59e0b','#d97706','#06b6d4','#3b82f6','#f59e0b','#10b981','#3b82f6'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:10,color:'#475569',font:{size:10}}}}}});}
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+# ============================================================
+# Render 部署配置（一个仓库 = 两个服务）
+# 后端：Flask API（Web Service）
+# 前端：纯静态站（Static Site）
+# 把本目录整个推到 GitHub 后，在 Render 选「Blueprint / 读取 render.yaml」即可一次建两个服务。
+# ============================================================
+services:
+  # ---------- 后端 API 服务 ----------
+  - type: web
+    name: rongzhi-cuixin-backend
+    runtime: python
+    rootDir: backend
+    plan: free
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: ADMIN_PASSWORD
+        value: linzuyan2007
+      - key: SECRET_KEY
+        generateValue: true   # 由 Render 创建服务时自动生成随机串，不落仓库；若手动建服务则自填一个随机串
+      # 部署适配：固定 Python 版本（Flask 3.1.0 要求 Python>=3.9，不固定则跟随平台默认版本，存在兼容风险）
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      # 注意：PORT 由 Render 自动注入，app.py 里已用 os.environ.get('PORT', 5000) 读取，不要写死
+
+  # ---------- 前端静态站 ----------
+  - type: web
+    name: rongzhi-cuixin-frontend
+    runtime: static
+    rootDir: frontend
+    plan: free
+    branch: main
+    staticPublishPath: .
+    # 纯静态，无需 buildCommand

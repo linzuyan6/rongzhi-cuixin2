@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>熔智淬新 · 管理后台登录</title>
+<style>
+  :root{--bg:#eef1f6;--surface:#ffffff;--ink:#1f2937;--text:#374151;--muted:#6b7280;
+        --blue:#2563eb;--blue-d:#1d4ed8;--orange:#f59e0b;--line:#e5e7eb;--radius:14px;}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+       background:linear-gradient(160deg,#eef1f6,#e3e9f2);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink)}
+  .card{width:380px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+        padding:34px 30px;box-shadow:0 12px 40px rgba(31,41,55,.08)}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--orange),#f97316);
+        display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px}
+  .brand b{font-size:18px;letter-spacing:.5px}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 22px 44px}
+  label{display:block;font-size:13px;color:var(--text);margin:14px 0 6px;font-weight:600}
+  input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:9px;font-size:14px;color:var(--ink);outline:none}
+  input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+  .btn{margin-top:20px;width:100%;padding:12px;border:none;border-radius:9px;background:var(--blue);color:#fff;
+       font-size:15px;font-weight:600;cursor:pointer}
+  .btn:hover{background:var(--blue-d)}
+  .err{color:#dc2626;font-size:13px;margin-top:12px;text-align:center}
+  .hint{color:var(--muted);font-size:12px;margin-top:16px;text-align:center}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand"><div class="logo">熔</div><b>熔智淬新</b></div>
+    <p class="sub">知识图谱管理后台 · 管理员登录</p>
+    <form method="post" action="/admin/login">
+      <label for="password">管理员密码</label>
+      <input id="password" name="password" type="password" placeholder="请输入密码" autofocus>
+      <button class="btn" type="submit">登 录</button>
+      {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    </form>
+    <div class="hint">登录后可新增 / 发布知识节点到公开图谱</div>
+  </div>
+</body>
+</html>

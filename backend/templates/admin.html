@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>熔智淬新 · 知识图谱后台</title>
+<style>
+  :root{--bg:#eef1f6;--surface:#ffffff;--ink:#1f2937;--text:#374151;--muted:#6b7280;
+        --blue:#2563eb;--blue-d:#1d4ed8;--orange:#f59e0b;--green:#10b981;--line:#e5e7eb;--radius:14px;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink)}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:14px 26px;
+       background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+  .brand{display:flex;align-items:center;gap:10px}
+  .logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--orange),#f97316);
+        display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:17px}
+  .brand b{font-size:16px;letter-spacing:.5px}
+  .brand span{color:var(--muted);font-size:12px;margin-left:6px}
+  .top a{color:var(--blue);text-decoration:none;font-size:13px;font-weight:600}
+  .wrap{max-width:1080px;margin:26px auto;padding:0 22px;display:grid;grid-template-columns:1.15fr .85fr;gap:22px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:0 8px 30px rgba(31,41,55,.06)}
+  .sec-t{font-size:15px;font-weight:700;margin:0 0 4px}
+  .sec-s{font-size:12px;color:var(--muted);margin:0 0 16px}
+  label{display:block;font-size:13px;color:var(--text);margin:12px 0 6px;font-weight:600}
+  input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:14px;color:var(--ink);outline:none;font-family:inherit}
+  input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+  textarea{resize:vertical;min-height:64px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .params{margin-top:14px;padding:14px;border:1px dashed var(--line);border-radius:10px;background:#f8fafc;display:none}
+  .params.show{display:block}
+  .params .ph{font-size:12px;color:var(--orange);font-weight:700;margin-bottom:8px}
+  .btn{margin-top:18px;width:100%;padding:12px;border:none;border-radius:9px;background:var(--blue);color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+  .btn:hover{background:var(--blue-d)}
+  .msg{margin-top:12px;font-size:13px;text-align:center;padding:8px;border-radius:8px;display:none}
+  .msg.ok{display:block;background:#ecfdf5;color:#047857;border:1px solid rgba(16,185,129,.25)}
+  .msg.err{display:block;background:#fef2f2;color:#dc2626;border:1px solid rgba(220,38,38,.25)}
+  .list-h{font-size:14px;font-weight:700;margin:0 0 12px}
+  .etag{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;margin:0 6px 8px 0}
+  .t1{background:#fff1e6;color:#c2410c}.t2{background:#fee2e2;color:#b91c1c}.t3{background:#e0f2fe;color:#0369a1}
+  .t4{background:#fef3c7;color:#b45309}.t5{background:#dcfce7;color:#15803d}.t7{background:#ede9fe;color:#6d28d9}
+  .t8{background:#f1f5f9;color:#334155}
+  .elist{max-height:520px;overflow:auto;padding-right:4px}
+  .eitem{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
+  .eitem .nm{font-weight:600}.eitem .id{color:var(--muted);font-size:11px}
+  @media(max-width:860px){.wrap{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="brand"><div class="logo">熔</div><b>熔智淬新</b><span>知识图谱管理后台</span></div>
+    <a href="/admin/logout">退出登录</a>
+  </div>
+
+  <div class="wrap">
+    <!-- 发布新节点 -->
+    <div class="card">
+      <p class="sec-t">发布新知识节点</p>
+      <p class="sec-s">按模板填写，点「发布」即写入知识图谱数据库，公开页实时可见。</p>
+      <form id="nodeForm" onsubmit="return submitNode(event)">
+        <label>节点类型</label>
+        <select id="f_type" onchange="toggleParams()">
+          <option value="1">砖型（含工艺参数）</option>
+          <option value="2">缺陷</option>
+          <option value="3">工位</option>
+          <option value="4">成因</option>
+          <option value="5">方案</option>
+          <option value="7">设备</option>
+          <option value="8">项目案例</option>
+        </select>
+
+        <label>名称（必填）</label>
+        <input id="f_name" placeholder="例如：标砖250 / 氧化铝砖">
+
+        <label>别名（逗号分隔，可选）</label>
+        <input id="f_aliases" placeholder="例如：250, 标砖, 250砖">
+
+        <label>描述 / 属性说明（可选）</label>
+        <textarea id="f_detail" placeholder="缺陷/成因/方案/案例填此处；砖型可填规格备注"></textarea>
+
+        <div class="params" id="paramBox">
+          <div class="ph">砖型工艺参数（可选填，留空则不写参数表）</div>
+          <div class="grid2">
+            <div><label>烘干温度</label><input id="p_dryTemp" placeholder="如 300±2C"></div>
+            <div><label>烘干时间</label><input id="p_dryTime" placeholder="如 8.5min"></div>
+            <div><label>烧成温度</label><input id="p_sinterTemp" placeholder="如 1450±10C"></div>
+            <div><label>烧成时间</label><input id="p_sinterTime" placeholder="如 3h"></div>
+            <div><label>成型压力</label><input id="p_pressPressure" placeholder="如 120-130MPa"></div>
+            <div><label>冷却速率</label><input id="p_coolRate" placeholder="如 &lt;30C/min"></div>
+          </div>
+          <label>规格备注（可选，写入属性）</label>
+          <input id="p_spec" placeholder="如 尺寸 250x120x70mm">
+        </div>
+
+        <button class="btn" type="submit">发 布 到 知 识 图 谱</button>
+        <div class="msg" id="form_msg"></div>
+      </form>
+    </div>
+
+    <!-- 已有实体 -->
+    <div class="card">
+      <p class="list-h">已有知识节点（<span id="ecount">0</span>）</p>
+      <div class="elist" id="elist"></div>
+    </div>
+  </div>
+
+<script>
+function v(id){return (document.getElementById(id).value||'').trim();}
+function toggleParams(){
+  var t=document.getElementById('f_type').value;
+  document.getElementById('paramBox').classList.toggle('show', t==='1');
+}
+function loadEntities(){
+  fetch('/api/kg').then(r=>r.json()).then(function(d){
+    document.getElementById('ecount').textContent=d.entities.length;
+    var html='';
+    d.entities.forEach(function(e){
+      var cls='t'+e.type;
+      html+='<div class="eitem"><span class="etag '+cls+'">'+ ({{ type_labels|tojson }})[e.type] +'</span>'+
+            '<span class="nm">'+e.name+'</span><span class="id">'+e.id+'</span></div>';
+    });
+    document.getElementById('elist').innerHTML=html;
+  });
+}
+function submitNode(e){
+  e.preventDefault();
+  var type=parseInt(document.getElementById('f_type').value,10);
+  var payload={type:type, name:v('f_name'), aliases:v('f_aliases'), detail:v('f_detail')};
+  if(type===1){
+    payload.params={dryTemp:v('p_dryTemp'),dryTime:v('p_dryTime'),sinterTemp:v('p_sinterTemp'),
+      sinterTime:v('p_sinterTime'),pressPressure:v('p_pressPressure'),coolRate:v('p_coolRate')};
+    var spec=v('p_spec'); if(spec) payload.attrs={note:spec};
+  }
+  var msg=document.getElementById('form_msg');
+  fetch('/api/kg',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+    .then(function(r){return r.json();}).then(function(d){
+      if(d.ok){msg.className='msg ok';msg.textContent=d.msg+'（已刷新右侧列表）';document.getElementById('nodeForm').reset();toggleParams();loadEntities();}
+      else{msg.className='msg err';msg.textContent=d.msg;}
+    }).catch(function(){msg.className='msg err';msg.textContent='网络错误';});
+  return false;
+}
+toggleParams();
+loadEntities();
+</script>
+</body>
+</html>

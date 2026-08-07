@@ -1,0 +1,5 @@
+kg.db
+__pycache__/
+*.pyc
+*.pyo
+.env
