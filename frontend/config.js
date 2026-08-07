@@ -1,11 +1,6 @@
 // ============================================================
 // 前端全局配置：后端 API 地址
 // ============================================================
-// 分离部署时，前端（静态站）和后端（API 服务）是不同域名，
-// 必须把下面这行改成后端服务在 Render 上的真实地址，例如：
-//   window.API_BASE = 'https://rongzhi-cuixin-backend.onrender.com';
-// 注意：结尾不要带斜杠 '/'。
-//
-// 如果留空 ''，则 fetch 走相对路径 '/api/kg'，仅在「前后端同域」时可用
-// （即你当初那种 app.py 直接托管前端的合一模式）。
-window.API_BASE = '';
+// 后端部署在 PythonAnywhere，地址如下（结尾不带斜杠）。
+// kg.html 等页面通过 (window.API_BASE || '') + '/api/kg' 访问后端。
+window.API_BASE = 'https://linzuyan2007.pythonanywhere.com';
